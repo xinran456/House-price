@@ -344,8 +344,10 @@ if {"district", "renovation", "price"}.issubset(filtered_df.columns):
         font={"family":"Noto Sans SC, sans‑serif", "size":14},
         xaxis_title="装修程度",
         yaxis_title="城区",
-        title_x=0.5,
-        margin={"l":80,"r":80,"t":80,"b":80},
+        title_x=0.02,
+        title_xanchor="left",
+        title_font_size=15,
+        margin={"l":90, "r":90, "t":90, "b":90},
         coloraxis_colorbar={
             "title_font":{"size":13},
             "tickfont":{"size":12}
