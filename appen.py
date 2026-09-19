@@ -155,6 +155,9 @@ st.dataframe(filtered_df, use_container_width=True)
 #9.19
 # 图表区域
 # 1. 价格分布（直方图 + 箱线图）
+# 专门适配 Streamlit 云！本地也照样能用，两边都不会崩
+plt.rcParams["font.sans-serif"] = ["WenQuanYi Zen Hei"]
+plt.rcParams["axes.unicode_minus"] = False # 解决负号变方框
 st.subheader("房价的分布概览")
 fig,axes = plt.subplots(nrows=1, ncols=2,figsize=(12,4))
 axes[0].hist(filtered_df['price'],bins=30,color='skyblue',edgecolor='black',alpha=0.7)
@@ -175,6 +178,9 @@ axes[1].set_ylabel('总价（万元）')
 st.pyplot(fig)
 
 # 2. 相关性热力图【已修复bathrooms缺失导致KeyError】
+# 专门适配 Streamlit 云！本地也照样能用，两边都不会崩
+plt.rcParams["font.sans-serif"] = ["WenQuanYi Zen Hei"]
+plt.rcParams["axes.unicode_minus"] = False # 解决负号变方框
 st.subheader("数值特征相关性")
 numeric_cols = ['price','area','bedrooms','bathrooms','age','distance_to_center']
 # 自动过滤掉df中不存在的字段，防止KeyError
@@ -215,6 +221,9 @@ ax_area.grid(True,linestyle='--',alpha=0.5)
 st.pyplot(fig_area)
 
 # 4. 各城区房价箱线图
+# 专门适配 Streamlit 云！本地也照样能用，两边都不会崩
+plt.rcParams["font.sans-serif"] = ["WenQuanYi Zen Hei"]
+plt.rcParams["axes.unicode_minus"] = False # 解决负号变方框
 st.subheader("各城区房价对比")
 districts_order = ['东城','北城','西城','南城']
 # 检查筛选以后是否有数据
@@ -300,6 +309,9 @@ else:
 
 
 # 8. 地段 × 装修热力图
+# 专门适配 Streamlit 云！本地也照样能用，两边都不会崩
+plt.rcParams["font.sans-serif"] = ["WenQuanYi Zen Hei"]
+plt.rcParams["axes.unicode_minus"] = False # 解决负号变方框
 if {"district","renovation","price"}.issubset(filtered_df.columns):
     st.subheader("地段与装修程度交互分析")
     pivot = filtered_df.pivot_table(values='price',index='district',columns='renovation',aggfunc='mean',fill_value=0)
