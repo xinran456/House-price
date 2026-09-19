@@ -16,9 +16,10 @@ st.set_page_config(
     initial_sidebar_state='expanded'
 )
 
-# Matplotlib 不再依赖中文字体，直接用英文标签
+# Matplotlib：全部使用英文，杜绝中文方框
 plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
+
 
 @st.cache_data(ttl=3600)
 def generate_house_data(n=2000):
@@ -68,6 +69,7 @@ def generate_house_data(n=2000):
         'renovation': renovations,
     })
     return df
+
 
 # 加载数据
 with st.spinner('正在加载模拟数据'):
@@ -163,7 +165,7 @@ axes[0].set_ylabel('Frequency')
 axes[0].legend()
 
 axes[1].boxplot(filtered_df['price'], vert=True, patch_artist=True,
-                boxprops=dict(color='lightgreen'))
+                boxprops=dict(facecolor='lightgreen'))
 axes[1].set_title('Price Boxplot')
 axes[1].set_ylabel('Price (10k yuan)')
 
@@ -213,17 +215,19 @@ ax_area.legend()
 ax_area.grid(True, linestyle='--', alpha=0.5)
 st.pyplot(fig_area)
 
-# 4. 城区房价对比
+# 4. 城区房价对比【修复：x轴英文，解决方框】
 st.subheader("各城区房价对比")
 districts_order = ['东城', '北城', '西城', '南城']
+dist_eng_map = {'东城':'East','北城':'North','西城':'West','南城':'South'}
+dist_eng_list = [dist_eng_map[d] for d in districts_order]
 
 if len(filtered_df) > 0:
     valid_districts = [d for d in districts_order if d in filtered_df['district'].unique()]
-
+    valid_eng = [dist_eng_map[d] for d in valid_districts]
     if valid_districts:
         data_to_plot = [filtered_df[filtered_df['district'] == d]['price'] for d in valid_districts]
         fig_dist, ax_dist = plt.subplots(figsize=(10, 5))
-        bp = ax_dist.boxplot(data_to_plot, tick_labels=valid_districts, patch_artist=True)
+        bp = ax_dist.boxplot(data_to_plot, tick_labels=valid_eng, patch_artist=True)
 
         colors = ['#ff9999', '#66B2ff', '#99ff99', '#ffcc99']
         for patch, color in zip(bp['boxes'], colors[:len(data_to_plot)]):
@@ -238,21 +242,26 @@ if len(filtered_df) > 0:
 else:
     st.warning('当前筛选条件没有房源数据，请放宽条件')
 
-# 5. 装修程度 vs 房价
+# 5. 装修程度 vs 房价【修复：x轴英文，解决方框】
 st.subheader("装修程度与房价")
 renovation_order = ['毛坯', '简装', '精装', '豪装']
+reno_eng_map = {"毛坯":"Raw","简装":"Simple","精装":"Fine","豪装":"Luxury"}
+reno_eng_list = [reno_eng_map[r] for r in renovation_order]
 
 renovation_states = (filtered_df.groupby('renovation')['price']
-                     .agg(['mean', 'std'])
-                     .reindex(renovation_order)
-                     .dropna())
+                    .agg(['mean', 'std'])
+                    .reindex(renovation_order)
+                    .dropna())
 
 fig_reno, ax_reno = plt.subplots(figsize=(10, 5))
-bars = ax_reno.bar(renovation_states.index, renovation_states['mean'],
-                   yerr=renovation_states['std'],
-                   capsize=5,
-                   color=['#8b8682', '#cdbe70', '#ffd700', '#8860b0'],
-                   edgecolor='black')
+bars = ax_reno.bar(
+    [reno_eng_map[i] for i in renovation_states.index],
+    renovation_states['mean'],
+    yerr=renovation_states['std'],
+    capsize=5,
+    color=['#8b8682', '#cdbe70', '#ffd700', '#8860b0'],
+    edgecolor='black'
+)
 
 ax_reno.set_ylabel('Average Price (10k yuan)')
 ax_reno.set_title('Price by Renovation Condition')
@@ -309,17 +318,41 @@ if "distance_to_center" in filtered_df.columns and "price" in filtered_df.column
 else:
     st.info("缺少distance_to_center或price字段，跳过【距离‑价格】图")
 
-# 8. 地段 × 装修热力图
+# 8. 地段 × 装修热力图【完整美化修复】
 if {"district", "renovation", "price"}.issubset(filtered_df.columns):
     st.subheader("地段与装修程度交互分析")
-    pivot = filtered_df.pivot_table(values='price', index='district',
-                                    columns='renovation', aggfunc='mean', fill_value=0)
+    pivot = filtered_df.pivot_table(
+        values='price',
+        index='district',
+        columns='renovation',
+        aggfunc='mean',
+        fill_value=0
+    )
+    rename_idx = {"东城":"东城","北城":"北城","西城":"西城","南城":"南城"}
+    rename_col = {"毛坯":"毛坯","简装":"简装","精装":"精装","豪装":"豪装"}
+    pivot.index = [rename_idx.get(i,i) for i in pivot.index]
+    pivot.columns = [rename_col.get(c,c) for c in pivot.columns]
 
-    fig_pivot = px.imshow(pivot, text_auto='.0f',
-                          color_continuous_scale='YlOrRd',
-                          labels=dict(color="平均房价（万元）"),
-                          title='各地段×装修程度平均房价热力图')
-    fig_pivot.update_layout(font=dict(family="'Noto Sans SC', sans-serif"))
+    fig_pivot = px.imshow(
+        pivot,
+        text_auto='.0f',
+        color_continuous_scale='YlOrRd',
+        labels={"color":"平均房价（万元）"},
+        title="各地段 × 装修程度平均房价热力图"
+    )
+    fig_pivot.update_layout(
+        font={"family":"Noto Sans SC, sans‑serif", "size":14},
+        xaxis_title="装修程度",
+        yaxis_title="城区",
+        title_x=0.5,
+        margin={"l":80,"r":80,"t":80,"b":80},
+        coloraxis_colorbar={
+            "title_font":{"size":13},
+            "tickfont":{"size":12}
+        }
+    )
+    fig_pivot.update_xaxes(tickfont_size=13)
+    fig_pivot.update_yaxes(tickfont_size=13)
     st.plotly_chart(fig_pivot, use_container_width=True)
 else:
     st.info("缺少district / renovation / price字段，跳过地段装修热力图")
@@ -388,7 +421,7 @@ if len(valid_features) >= 2 and y_col in filtered_df.columns and len(filtered_df
         if 'bathrooms' in valid_features:
             with cols[idx % 3]:
                 input_dict['bathrooms'] = st.number_input(label="浴室数",
-                                                         min_value=1, max_value=3, value=2)
+                                                          min_value=1, max_value=3, value=2)
             idx += 1
 
         if 'age' in valid_features:
